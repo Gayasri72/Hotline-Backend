@@ -1,0 +1,64 @@
+import { configDotenv } from "dotenv";
+configDotenv();
+import { connectDB } from "../config/db.js";
+import Permission from "../models/auth/permissionModel.js";
+import { PERMISSIONS, PERMISSION_CATEGORIES } from "../constants/permission.js";
+import mongoose from "mongoose";
+
+await connectDB();
+
+// Permission descriptions
+const PERMISSION_DESCRIPTIONS = {
+  CREATE_SALE: "Create new sales transactions",
+  VOID_SALE: "Void/cancel existing sales",
+  VIEW_SALES: "View sales history and details",
+  APPLY_DISCOUNT: "Apply discounts to sales",
+  VIEW_PROFIT_REPORT: "View profit reports",
+  VIEW_SALES_REPORT: "View sales reports",
+  EXPORT_REPORTS: "Export reports to file",
+  CREATE_USER: "Create new users",
+  VIEW_USERS: "View user list and details",
+  UPDATE_USER: "Update user information",
+  DELETE_USER: "Delete/deactivate users",
+  MANAGE_ROLES: "Create, update, delete roles",
+  ASSIGN_ROLES: "Assign roles to users",
+  MANAGE_PERMISSIONS: "View and manage permissions",
+  ASSIGN_PERMISSIONS: "Assign direct permissions to users",
+  MANAGE_INVENTORY: "Add, update, delete inventory items",
+  VIEW_INVENTORY: "View inventory list",
+  DEVICE_REPAIR: "Manage device repairs",
+  VIEW_REPAIRS: "View repair records",
+  MANAGE_SETTINGS: "Manage system settings",
+};
+
+// Get category for a permission
+const getCategory = (permCode) => {
+  for (const [category, perms] of Object.entries(PERMISSION_CATEGORIES)) {
+    if (perms.includes(permCode)) {
+      return category;
+    }
+  }
+  return "SETTINGS"; // Default category
+};
+
+console.log("Seeding permissions...");
+
+const perms = Object.values(PERMISSIONS);
+for (const code of perms) {
+  await Permission.updateOne(
+    { code },
+    {
+      $setOnInsert: {
+        code,
+        description: PERMISSION_DESCRIPTIONS[code] || "",
+        category: getCategory(code),
+      },
+    },
+    { upsert: true }
+  );
+  console.log(`  ✓ ${code}`);
+}
+
+console.log(`\n✅ Seeded ${perms.length} permissions successfully!`);
+
+await mongoose.disconnect();

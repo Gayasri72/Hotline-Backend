@@ -1,0 +1,87 @@
+import { configDotenv } from "dotenv";
+configDotenv();
+import { connectDB } from "../config/db.js";
+
+import Role from "../models/auth/roleModel.js";
+import Permission from "../models/auth/permissionModel.js";
+import { ROLES } from "../constants/role.js";
+import { PERMISSIONS } from "../constants/permission.js";
+import mongoose from "mongoose";
+
+await connectDB();
+
+// Role-Permission mappings
+const ROLE_PERMISSIONS = {
+  ADMIN: Object.values(PERMISSIONS), // Admin gets ALL permissions
+
+  MANAGER: [
+    PERMISSIONS.CREATE_SALE,
+    PERMISSIONS.VOID_SALE,
+    PERMISSIONS.VIEW_SALES,
+    PERMISSIONS.APPLY_DISCOUNT,
+    PERMISSIONS.VIEW_PROFIT_REPORT,
+    PERMISSIONS.VIEW_SALES_REPORT,
+    PERMISSIONS.EXPORT_REPORTS,
+    PERMISSIONS.VIEW_USERS,
+    PERMISSIONS.ASSIGN_ROLES,
+    PERMISSIONS.VIEW_INVENTORY,
+    PERMISSIONS.MANAGE_INVENTORY,
+    PERMISSIONS.VIEW_REPAIRS,
+  ],
+
+  CASHIER: [
+    PERMISSIONS.CREATE_SALE,
+    PERMISSIONS.VIEW_SALES,
+    PERMISSIONS.VIEW_INVENTORY,
+  ],
+
+  TECHNICIAN: [
+    PERMISSIONS.VIEW_INVENTORY,
+    PERMISSIONS.DEVICE_REPAIR,
+    PERMISSIONS.VIEW_REPAIRS,
+  ],
+};
+
+// Role descriptions
+const ROLE_DESCRIPTIONS = {
+  ADMIN: "Full system access with all permissions",
+  MANAGER: "Manage sales, reports, inventory and assign roles",
+  CASHIER: "Process sales transactions",
+  TECHNICIAN: "Handle device repairs and view inventory",
+};
+
+console.log("Seeding roles...");
+
+for (const roleName of Object.values(ROLES)) {
+  // Get permission IDs for this role
+  const permCodes = ROLE_PERMISSIONS[roleName] || [];
+  const permissions = await Permission.find({ code: { $in: permCodes } });
+  const permissionIds = permissions.map((p) => p._id);
+
+  // Create or update role
+  const existingRole = await Role.findOne({ name: roleName });
+
+  if (existingRole) {
+    existingRole.permissions = permissionIds;
+    existingRole.description = ROLE_DESCRIPTIONS[roleName];
+    existingRole.isDefault = true;
+    await existingRole.save();
+    console.log(
+      `  ✓ Updated ${roleName} role with ${permissionIds.length} permissions`
+    );
+  } else {
+    await Role.create({
+      name: roleName,
+      description: ROLE_DESCRIPTIONS[roleName],
+      permissions: permissionIds,
+      isDefault: true,
+    });
+    console.log(
+      `  ✓ Created ${roleName} role with ${permissionIds.length} permissions`
+    );
+  }
+}
+
+console.log("\n✅ Seeded all roles successfully!");
+
+await mongoose.disconnect();
