@@ -29,11 +29,17 @@ const productSchema = new mongoose.Schema({
     trim: true,
     maxlength: [50, "Barcode cannot exceed 50 characters"]
   },
-  // Category reference
+  // Category reference (main category)
   category: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Category",
     required: [true, "Product category is required"]
+  },
+  // Subcategory reference (optional)
+  subcategory: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "Category",
+    default: null
   },
   // Pricing
   costPrice: {
@@ -82,16 +88,62 @@ const productSchema = new mongoose.Schema({
     maxlength: [500, "Warranty description cannot exceed 500 characters"]
     // E.g., "Covers manufacturing defects only"
   },
-  // Product image URL
-  image: {
-    type: String,
-    trim: true
+  // Supplier information (for admin reference)
+  supplier: {
+    name: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Supplier name cannot exceed 100 characters"]
+    },
+    contact: {
+      type: String,
+      trim: true,
+      maxlength: [100, "Contact person name cannot exceed 100 characters"]
+    },
+    phone: {
+      type: String,
+      trim: true,
+      maxlength: [20, "Phone number cannot exceed 20 characters"]
+    },
+    email: {
+      type: String,
+      trim: true,
+      lowercase: true
+    }
   },
   // Minimum stock level for alerts
   minStockLevel: {
     type: Number,
     min: [0, "Minimum stock level cannot be negative"],
     default: 0
+  },
+  // Product-level offer/discount
+  offer: {
+    isActive: {
+      type: Boolean,
+      default: false
+    },
+    type: {
+      type: String,
+      enum: ["PERCENTAGE", "FIXED"],
+      default: "PERCENTAGE"
+    },
+    value: {
+      type: Number,
+      min: [0, "Offer value cannot be negative"],
+      default: 0
+    },
+    startDate: {
+      type: Date
+    },
+    endDate: {
+      type: Date
+    },
+    description: {
+      type: String,
+      trim: true,
+      maxlength: [200, "Offer description cannot exceed 200 characters"]
+    }
   },
   // Soft delete
   isActive: {
@@ -112,6 +164,38 @@ productSchema.index({ category: 1, isActive: 1 });
 
 // Index for barcode lookup (POS scanning)
 productSchema.index({ barcode: 1 });
+
+// Virtual to check if offer is currently active
+productSchema.virtual("hasActiveOffer").get(function() {
+  if (!this.offer || !this.offer.isActive) return false;
+  
+  const now = new Date();
+  const startValid = !this.offer.startDate || now >= new Date(this.offer.startDate);
+  const endValid = !this.offer.endDate || now <= new Date(this.offer.endDate);
+  
+  return startValid && endValid && this.offer.value > 0;
+});
+
+// Virtual for effective price (with offer applied)
+productSchema.virtual("effectivePrice").get(function() {
+  if (!this.hasActiveOffer) {
+    return this.sellingPrice;
+  }
+  
+  if (this.offer.type === "PERCENTAGE") {
+    const discount = this.sellingPrice * (this.offer.value / 100);
+    return Math.round((this.sellingPrice - discount) * 100) / 100;
+  } else {
+    // FIXED discount
+    return Math.max(0, Math.round((this.sellingPrice - this.offer.value) * 100) / 100);
+  }
+});
+
+// Virtual for discount amount
+productSchema.virtual("discountAmount").get(function() {
+  if (!this.hasActiveOffer) return 0;
+  return Math.round((this.sellingPrice - this.effectivePrice) * 100) / 100;
+});
 
 // Virtual for profit margin
 productSchema.virtual("profitMargin").get(function() {
@@ -149,7 +233,7 @@ productSchema.statics.quickSearch = async function(query) {
   const byBarcode = await this.findOne({ 
     barcode: query, 
     isActive: true 
-  }).populate("category", "name");
+  }).populate(["category", "subcategory"]);
 
   if (byBarcode) {
     return [byBarcode];
@@ -159,7 +243,7 @@ productSchema.statics.quickSearch = async function(query) {
   const bySku = await this.findOne({ 
     sku: query.toUpperCase(), 
     isActive: true 
-  }).populate("category", "name");
+  }).populate(["category", "subcategory"]);
 
   if (bySku) {
     return [bySku];
@@ -177,7 +261,7 @@ productSchema.statics.quickSearch = async function(query) {
       }
     ]
   })
-  .populate("category", "name")
+  .populate(["category", "subcategory"])
   .limit(10);
 
   return results;

@@ -289,3 +289,44 @@ export const getUserPermissions = catchAsync(async (req, res, next) => {
     }
   });
 });
+
+/**
+ * Update own profile (requires UPDATE_OWN_PROFILE permission)
+ * PUT /api/users/me
+ * Only managers and super admins can update their own profiles
+ */
+export const updateMyProfile = catchAsync(async (req, res, next) => {
+  const { username, email, password, passwordConfirm } = req.body;
+
+  const user = await User.findById(req.userId);
+  if (!user) {
+    return next(new AppError("User not found", 404));
+  }
+
+  // Update allowed fields only
+  if (username) user.username = username;
+  if (email) user.email = email;
+
+  // Handle password update
+  if (password) {
+    if (!passwordConfirm) {
+      return next(new AppError("Please provide password confirmation when updating password", 400));
+    }
+    user.password = password;
+    user.passwordConfirm = passwordConfirm;
+  }
+
+  await user.save();
+
+  res.json({
+    status: "success",
+    message: "Profile updated successfully",
+    data: {
+      user: {
+        id: user._id,
+        username: user.username,
+        email: user.email
+      }
+    }
+  });
+});

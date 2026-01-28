@@ -7,7 +7,7 @@ import AppError from "../../utils/appError.js";
  * POST /api/v1/categories
  */
 export const createCategory = catchAsync(async (req, res, next) => {
-  const { name, description, parent, image } = req.body;
+  const { name, description, parent } = req.body;
 
   // Validate required fields
   if (!name) {
@@ -38,8 +38,7 @@ export const createCategory = catchAsync(async (req, res, next) => {
   const category = await Category.create({
     name,
     description,
-    parent: parent || null,
-    image
+    parent: parent || null
   });
 
   // Populate parent if exists
@@ -56,11 +55,12 @@ export const createCategory = catchAsync(async (req, res, next) => {
  * GET /api/v1/categories
  * Query params:
  *   - tree=true: Returns hierarchical tree structure
- *   - flat=true: Returns flat list
- *   - parent=id: Returns only children of specified parent
+ *   - rootOnly=true: Returns only main/root categories (no parent)
+ *   - parent=id: Returns only subcategories of specified parent
+ *   - includeInactive=true: Include inactive categories
  */
 export const getCategories = catchAsync(async (req, res, next) => {
-  const { tree, parent, includeInactive } = req.query;
+  const { tree, parent, rootOnly, includeInactive } = req.query;
 
   // Return tree structure
   if (tree === "true") {
@@ -78,7 +78,12 @@ export const getCategories = catchAsync(async (req, res, next) => {
     query.isActive = true;
   }
 
-  if (parent) {
+  // Filter: only root/main categories (no parent)
+  if (rootOnly === "true") {
+    query.parent = null;
+  } 
+  // Filter: subcategories of a specific parent
+  else if (parent) {
     query.parent = parent;
   }
 
@@ -129,7 +134,7 @@ export const getCategory = catchAsync(async (req, res, next) => {
  * PUT /api/v1/categories/:id
  */
 export const updateCategory = catchAsync(async (req, res, next) => {
-  const { name, description, parent, image, isActive } = req.body;
+  const { name, description, parent, isActive } = req.body;
 
   const category = await Category.findById(req.params.id);
   
@@ -179,7 +184,6 @@ export const updateCategory = catchAsync(async (req, res, next) => {
   if (name) category.name = name;
   if (description !== undefined) category.description = description;
   if (parent !== undefined) category.parent = parent;
-  if (image !== undefined) category.image = image;
   if (typeof isActive === "boolean") category.isActive = isActive;
 
   await category.save();

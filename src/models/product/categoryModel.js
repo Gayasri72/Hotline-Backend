@@ -18,11 +18,6 @@ const categorySchema = new mongoose.Schema({
     ref: "Category",
     default: null
   },
-  // Category image URL
-  image: {
-    type: String,
-    trim: true
-  },
   // Soft delete
   isActive: {
     type: Boolean,
@@ -73,7 +68,6 @@ categorySchema.statics.getTree = async function(parentId = null) {
       _id: category._id,
       name: category.name,
       description: category.description,
-      image: category.image,
       subcategories: children
     });
   }
