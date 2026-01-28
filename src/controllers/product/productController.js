@@ -10,9 +10,11 @@ import AppError from "../../utils/appError.js";
  */
 export const createProduct = catchAsync(async (req, res, next) => {
   const { 
-    name, description, sku, barcode, category,
+    name, description, sku, barcode, category, subcategory,
     costPrice, sellingPrice, wholesalePrice,
-    unit, taxRate, image, minStockLevel
+    unit, taxRate, minStockLevel,
+    warrantyDuration, warrantyType, warrantyDescription,
+    supplier, offer
   } = req.body;
 
   // Validate required fields
@@ -45,22 +47,49 @@ export const createProduct = catchAsync(async (req, res, next) => {
     }
   }
 
+  // If subcategory is provided, verify it exists and is a child of the main category
+  if (subcategory) {
+    const subcategoryExists = await Category.findById(subcategory);
+    if (!subcategoryExists) {
+      return next(new AppError("Subcategory not found", 404));
+    }
+    if (!subcategoryExists.isActive) {
+      return next(new AppError("Cannot add product to an inactive subcategory", 400));
+    }
+    // Verify subcategory is a child of the main category
+    if (!subcategoryExists.parent || subcategoryExists.parent.toString() !== category) {
+      return next(new AppError("Subcategory must be a child of the selected main category", 400));
+    }
+  }
+
   const product = await Product.create({
     name,
     description,
     sku: sku ? sku.toUpperCase() : undefined,
     barcode,
     category,
+    subcategory: subcategory || null,
     costPrice,
     sellingPrice,
     wholesalePrice,
     unit,
     taxRate,
-    image,
-    minStockLevel
+    minStockLevel,
+    warrantyDuration,
+    warrantyType,
+    warrantyDescription,
+    supplier,
+    offer: offer ? {
+      isActive: offer.isActive || false,
+      type: offer.type || "PERCENTAGE",
+      value: offer.value || 0,
+      startDate: offer.startDate || null,
+      endDate: offer.endDate || null,
+      description: offer.description || null
+    } : undefined
   });
 
-  await product.populate("category", "name");
+  await product.populate(["category", "subcategory"]);
 
   res.status(201).json({
     status: "success",
@@ -126,7 +155,7 @@ export const getProducts = catchAsync(async (req, res, next) => {
   // Execute query
   const [products, total] = await Promise.all([
     Product.find(query)
-      .populate("category", "name")
+      .populate(["category", "subcategory"])
       .sort(sort)
       .skip(skip)
       .limit(limitNum),
@@ -206,7 +235,7 @@ export const searchProducts = catchAsync(async (req, res, next) => {
  */
 export const getProduct = catchAsync(async (req, res, next) => {
   const product = await Product.findById(req.params.id)
-    .populate("category", "name description");
+    .populate(["category", "subcategory"]);
 
   if (!product) {
     return next(new AppError("Product not found", 404));
@@ -226,7 +255,7 @@ export const getProductByBarcode = catchAsync(async (req, res, next) => {
   const product = await Product.findOne({ 
     barcode: req.params.barcode,
     isActive: true 
-  }).populate("category", "name");
+  }).populate(["category", "subcategory"]);
 
   if (!product) {
     return next(new AppError("Product not found", 404));
@@ -244,9 +273,11 @@ export const getProductByBarcode = catchAsync(async (req, res, next) => {
  */
 export const updateProduct = catchAsync(async (req, res, next) => {
   const {
-    name, description, sku, barcode, category,
+    name, description, sku, barcode, category, subcategory,
     costPrice, sellingPrice, wholesalePrice,
-    unit, taxRate, image, minStockLevel, isActive
+    unit, taxRate, minStockLevel, isActive,
+    warrantyDuration, warrantyType, warrantyDescription,
+    supplier, offer
   } = req.body;
 
   const product = await Product.findById(req.params.id);
@@ -288,6 +319,22 @@ export const updateProduct = catchAsync(async (req, res, next) => {
     }
   }
 
+  // If changing subcategory, validate it
+  if (subcategory !== undefined) {
+    if (subcategory) {
+      const subcategoryExists = await Category.findById(subcategory);
+      if (!subcategoryExists) {
+        return next(new AppError("Subcategory not found", 404));
+      }
+      // Use the new category if provided, otherwise use existing
+      const parentCatId = category || product.category.toString();
+      if (!subcategoryExists.parent || subcategoryExists.parent.toString() !== parentCatId) {
+        return next(new AppError("Subcategory must be a child of the selected main category", 400));
+      }
+    }
+    product.subcategory = subcategory;
+  }
+
   // Update fields
   if (name) product.name = name;
   if (description !== undefined) product.description = description;
@@ -299,12 +346,30 @@ export const updateProduct = catchAsync(async (req, res, next) => {
   if (wholesalePrice !== undefined) product.wholesalePrice = wholesalePrice;
   if (unit) product.unit = unit;
   if (taxRate !== undefined) product.taxRate = taxRate;
-  if (image !== undefined) product.image = image;
   if (minStockLevel !== undefined) product.minStockLevel = minStockLevel;
+  if (warrantyDuration !== undefined) product.warrantyDuration = warrantyDuration;
+  if (warrantyType !== undefined) product.warrantyType = warrantyType;
+  if (warrantyDescription !== undefined) product.warrantyDescription = warrantyDescription;
+  if (supplier !== undefined) product.supplier = supplier;
   if (typeof isActive === "boolean") product.isActive = isActive;
+  // Handle offer updates
+  if (offer !== undefined) {
+    if (offer === null) {
+      product.offer = { isActive: false, type: "PERCENTAGE", value: 0 };
+    } else {
+      product.offer = {
+        isActive: offer.isActive !== undefined ? offer.isActive : (product.offer?.isActive || false),
+        type: offer.type || product.offer?.type || "PERCENTAGE",
+        value: offer.value !== undefined ? offer.value : (product.offer?.value || 0),
+        startDate: offer.startDate !== undefined ? offer.startDate : product.offer?.startDate,
+        endDate: offer.endDate !== undefined ? offer.endDate : product.offer?.endDate,
+        description: offer.description !== undefined ? offer.description : product.offer?.description
+      };
+    }
+  }
 
   await product.save();
-  await product.populate("category", "name");
+  await product.populate(["category", "subcategory"]);
 
   res.json({
     status: "success",
@@ -342,7 +407,7 @@ export const getProductsByCategory = catchAsync(async (req, res, next) => {
     category: req.params.categoryId,
     isActive: true
   })
-  .populate("category", "name")
+  .populate(["category", "subcategory"])
   .sort("name");
 
   res.json({

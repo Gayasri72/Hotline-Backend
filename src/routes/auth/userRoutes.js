@@ -7,7 +7,8 @@ import {
   deleteUser,
   assignRoles,
   assignDirectPermissions,
-  getUserPermissions
+  getUserPermissions,
+  updateMyProfile
 } from "../../controllers/auth/userController.js";
 import { authenticate } from "../../middlewares/auth/authenticate.js";
 import { authorize } from "../../middlewares/auth/authorize.js";
@@ -17,6 +18,10 @@ const router = express.Router();
 
 // All routes require authentication
 router.use(authenticate);
+
+// Update own profile - must be BEFORE /:id routes to avoid conflict
+// Only users with UPDATE_OWN_PROFILE permission can update their own profile
+router.put("/me", authorize(PERMISSIONS.UPDATE_OWN_PROFILE), updateMyProfile);
 
 // User CRUD
 router.post("/", authorize(PERMISSIONS.CREATE_USER), createUser);

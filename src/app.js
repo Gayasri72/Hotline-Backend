@@ -19,6 +19,9 @@ import inventoryRoutes from './routes/inventory/inventoryRoutes.js';
 import saleRoutes from './routes/sale/saleRoutes.js';
 import repairRoutes from './routes/repair/repairRoutes.js';
 import warrantyRoutes from './routes/warranty/warrantyRoutes.js';
+import returnRoutes from './routes/sale/returnRoutes.js';
+import reportRoutes from './routes/report/reportRoutes.js';
+import promotionRoutes from './routes/promotion/promotionRoutes.js';
 
 const app = express();
 
@@ -62,15 +65,20 @@ app.use("/api/v1/inventory", inventoryRoutes);
 app.use("/api/v1/sales", saleRoutes);
 app.use("/api/v1/repairs", repairRoutes);
 app.use("/api/v1/warranties", warrantyRoutes);
+app.use("/api/v1/returns", returnRoutes);
+app.use("/api/v1/reports", reportRoutes);
+app.use("/api/v1/promotions", promotionRoutes);
 
-// Health check
-app.get("/health", (req, res) => {
+// Health check endpoints
+const healthResponse = (req, res) => {
   res.json({ 
     status: "ok", 
     timestamp: new Date().toISOString(),
     uptime: process.uptime()
   });
-});
+};
+app.get("/health", healthResponse);
+app.get("/api/v1/health", healthResponse);
 
 // 404 handler - undefined routes handler
 app.use((req, res, next) => {

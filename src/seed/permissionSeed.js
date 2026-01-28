@@ -13,6 +13,8 @@ const PERMISSION_DESCRIPTIONS = {
   VOID_SALE: "Void/cancel existing sales",
   VIEW_SALES: "View sales history and details",
   APPLY_DISCOUNT: "Apply discounts to sales",
+  CREATE_RETURN: "Create product returns and refunds",
+  VIEW_RETURNS: "View return history and details",
   VIEW_PROFIT_REPORT: "View profit reports",
   VIEW_SALES_REPORT: "View sales reports",
   EXPORT_REPORTS: "Export reports to file",
@@ -20,6 +22,7 @@ const PERMISSION_DESCRIPTIONS = {
   VIEW_USERS: "View user list and details",
   UPDATE_USER: "Update user information",
   DELETE_USER: "Delete/deactivate users",
+  UPDATE_OWN_PROFILE: "Update own profile (username, password)",
   MANAGE_ROLES: "Create, update, delete roles",
   ASSIGN_ROLES: "Assign roles to users",
   MANAGE_PERMISSIONS: "View and manage permissions",
@@ -49,6 +52,8 @@ const PERMISSION_DESCRIPTIONS = {
   CREATE_WARRANTY_CLAIM: "Create warranty claims",
   VIEW_WARRANTY_REPORTS: "View warranty reports and statistics",
   MANAGE_SETTINGS: "Manage system settings",
+  MANAGE_PROMOTIONS: "Create, update, delete promotional offers",
+  VIEW_PROMOTIONS: "View promotions and offers",
 };
 
 // Get category for a permission

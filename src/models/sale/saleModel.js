@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 export const PAYMENT_METHODS = {
   CASH: "CASH",
   CARD: "CARD",
-  MOBILE: "MOBILE",
   OTHER: "OTHER"
 };
 
