@@ -46,10 +46,31 @@ if (process.env.NODE_ENV === "development") {
   app.use(morgan("combined"));
 }
 
-// Body parser and CORS
+// CORS Configuration - Multiple origins support
+const allowedOrigins = [
+  'https://hotline-admin.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+  'http://localhost:5174',
+  // Add additional origins from env variable if provided
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [])
+];
+
 app.use(cors({
-  origin: process.env.CORS_ORIGIN || "*",
-  credentials: true
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      console.warn(`CORS blocked origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 app.use(express.json({ limit: "10kb" })); // Limit body size
 app.use(express.urlencoded({ extended: true, limit: "10kb" }));
