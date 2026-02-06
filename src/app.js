@@ -31,6 +31,7 @@ const allowedOrigins = [
   'http://localhost:3000',
   'http://localhost:5173',
   'http://localhost:5174',
+  'https://hotline-pos-git-main-chankamaas-projects.vercel.app',
   // Add additional origins from env variable if provided
   ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [])
 ];
