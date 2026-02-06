@@ -55,9 +55,6 @@ const corsOptions = {
 
 app.use(cors(corsOptions));
 
-// Handle preflight requests explicitly for all routes
-app.options('/*', cors(corsOptions));
-
 // Security Middleware - AFTER CORS
 app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" }
