@@ -50,16 +50,6 @@ const saleItemSchema = new mongoose.Schema({
     required: true,
     min: [0, "Unit price cannot be negative"]
   },
-  taxRate: {
-    type: Number,
-    default: 0,
-    min: 0,
-    max: 100
-  },
-  taxAmount: {
-    type: Number,
-    default: 0
-  },
   discount: {
     type: Number,
     default: 0,
@@ -151,12 +141,6 @@ const saleSchema = new mongoose.Schema({
     min: 0
   },
   discountTotal: {
-    type: Number,
-    default: 0,
-    min: 0
-  },
-  // Tax
-  taxTotal: {
     type: Number,
     default: 0,
     min: 0
@@ -274,7 +258,6 @@ saleSchema.statics.getDailySummary = async function(date = new Date()) {
         totalSales: { $sum: 1 },
         totalRevenue: { $sum: "$grandTotal" },
         totalDiscount: { $sum: "$discountTotal" },
-        totalTax: { $sum: "$taxTotal" },
         totalItems: { $sum: { $size: "$items" } },
         cashTotal: {
           $sum: {
@@ -320,7 +303,6 @@ saleSchema.statics.getDailySummary = async function(date = new Date()) {
     totalSales: 0,
     totalRevenue: 0,
     totalDiscount: 0,
-    totalTax: 0,
     totalItems: 0,
     cashTotal: 0,
     cardTotal: 0

@@ -77,7 +77,7 @@ const processProductRow = async (rowData, mode, stockMode, createdBy) => {
   const {
     name, sku, barcode, category: categoryName, subcategory: subcategoryName,
     costPrice, sellingPrice, wholesalePrice, stockQuantity, unit,
-    taxRate, minStockLevel, warrantyMonths, warrantyType,
+    minStockLevel, warrantyMonths, warrantyType,
     offerType, offerValue, offerEndDate, description
   } = rowData;
 
@@ -119,7 +119,6 @@ const processProductRow = async (rowData, mode, stockMode, createdBy) => {
     if (subcategory) product.subcategory = subcategory._id;
     if (barcode) product.barcode = barcode;
     if (unit) product.unit = unit;
-    if (taxRate !== undefined) product.taxRate = taxRate;
     if (minStockLevel !== undefined) product.minStockLevel = minStockLevel;
     if (warrantyMonths) product.warrantyDuration = warrantyMonths;
     if (warrantyType) product.warrantyType = warrantyType;
@@ -150,7 +149,6 @@ const processProductRow = async (rowData, mode, stockMode, createdBy) => {
       sellingPrice,
       wholesalePrice: wholesalePrice || undefined,
       unit: unit || "pcs",
-      taxRate: taxRate || 0,
       minStockLevel: minStockLevel || 5,
       warrantyDuration: warrantyMonths || undefined,
       warrantyType: warrantyType || undefined,

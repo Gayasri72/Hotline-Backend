@@ -63,13 +63,6 @@ const productSchema = new mongoose.Schema({
     enum: ["piece", "kg", "g", "liter", "ml", "meter", "cm", "box", "pack", "dozen"],
     default: "piece"
   },
-  // Tax rate percentage
-  taxRate: {
-    type: Number,
-    min: [0, "Tax rate cannot be negative"],
-    max: [100, "Tax rate cannot exceed 100%"],
-    default: 0
-  },
   // Warranty information (default for this product)
   warrantyDuration: {
     type: Number,
@@ -205,21 +198,20 @@ productSchema.virtual("profitMargin").get(function() {
   return 0;
 });
 
-// Virtual for price with tax
-productSchema.virtual("sellingPriceWithTax").get(function() {
-  if (this.sellingPrice && this.taxRate) {
-    return (this.sellingPrice * (1 + this.taxRate / 100)).toFixed(2);
-  }
-  return this.sellingPrice;
-});
-
-// Pre-save hook to generate SKU if not provided
+// Pre-save hook to generate SKU and barcode if not provided
 productSchema.pre("save", async function() {
   if (!this.sku && this.isNew) {
     // Generate SKU from category and timestamp
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
     this.sku = `PRD-${timestamp}-${random}`;
+  }
+
+  if (!this.barcode && this.isNew) {
+    // Generate a unique 12-digit numeric barcode
+    const timestamp = Date.now().toString().slice(-8);
+    const random = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
+    this.barcode = `${timestamp}${random}`;
   }
 });
 

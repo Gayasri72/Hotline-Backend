@@ -266,10 +266,8 @@ export const createExchange = catchAsync(async (req, res, next) => {
 
     const unitPrice = item.unitPrice || product.sellingPrice;
     const quantity = item.quantity;
-    const taxRate = product.taxRate || 0;
     const itemSubtotal = unitPrice * quantity;
-    const taxAmount = itemSubtotal * (taxRate / 100);
-    const itemTotal = itemSubtotal + taxAmount;
+    const itemTotal = itemSubtotal;
 
     processedNewItems.push({
       product: product._id,
@@ -278,8 +276,6 @@ export const createExchange = catchAsync(async (req, res, next) => {
       serialNumber: item.serialNumber || null,
       quantity,
       unitPrice,
-      taxRate,
-      taxAmount: Math.round(taxAmount * 100) / 100,
       discount: 0,
       total: Math.round(itemTotal * 100) / 100
     });
@@ -332,7 +328,6 @@ export const createExchange = catchAsync(async (req, res, next) => {
     discountType: null,
     discountValue: 0,
     discountTotal: 0,
-    taxTotal: processedNewItems.reduce((sum, item) => sum + item.taxAmount, 0),
     grandTotal: Math.round(newItemsTotal * 100) / 100,
     amountPaid,
     changeGiven: Math.round(changeGiven * 100) / 100,
