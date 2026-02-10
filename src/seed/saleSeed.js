@@ -36,7 +36,6 @@ async function createSale(saleData) {
 
   const items = [];
   let subtotal = 0;
-  let taxTotal = 0;
 
   for (const item of saleData.items) {
     const product = productMap[item.sku];
@@ -44,11 +43,9 @@ async function createSale(saleData) {
 
     const unitPrice = product.effectivePrice || product.sellingPrice;
     const qty = item.quantity;
-    const taxRate = product.taxRate || 0;
     const itemSubtotal = unitPrice * qty;
     const discount = item.discount || 0;
-    const taxAmount = (itemSubtotal - discount) * (taxRate / 100);
-    const total = itemSubtotal - discount + taxAmount;
+    const total = itemSubtotal - discount;
 
     items.push({
       product: product._id,
@@ -57,14 +54,11 @@ async function createSale(saleData) {
       serialNumber: item.serialNumber || null,
       quantity: qty,
       unitPrice,
-      taxRate,
-      taxAmount: Math.round(taxAmount * 100) / 100,
       discount,
       total: Math.round(total * 100) / 100
     });
 
     subtotal += itemSubtotal;
-    taxTotal += taxAmount;
 
     // Deduct stock
     const stock = await Stock.findOne({ product: product._id });
@@ -97,7 +91,7 @@ async function createSale(saleData) {
     }
   }
 
-  const grandTotal = Math.round((subtotal - discountTotal + taxTotal) * 100) / 100;
+  const grandTotal = Math.round((subtotal - discountTotal) * 100) / 100;
 
   const sale = await Sale.create({
     saleNumber,
@@ -112,7 +106,6 @@ async function createSale(saleData) {
     discountType: saleData.discountType || null,
     discountValue: saleData.discountValue || 0,
     discountTotal: Math.round(discountTotal * 100) / 100,
-    taxTotal: Math.round(taxTotal * 100) / 100,
     grandTotal,
     amountPaid: saleData.payments.reduce((sum, p) => sum + p.amount, 0),
     changeGiven: Math.max(0, saleData.payments.reduce((sum, p) => sum + p.amount, 0) - grandTotal),

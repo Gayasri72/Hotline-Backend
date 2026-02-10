@@ -65,7 +65,6 @@ export const getSalesSummary = catchAsync(async (req, res, next) => {
         totalSales: { $sum: 1 },
         totalRevenue: { $sum: "$grandTotal" },
         totalDiscount: { $sum: "$discountTotal" },
-        totalTax: { $sum: "$taxTotal" },
         avgSaleValue: { $avg: "$grandTotal" },
         totalItems: {
           $sum: {
@@ -108,7 +107,6 @@ export const getSalesSummary = catchAsync(async (req, res, next) => {
     totalSales: 0,
     totalRevenue: 0,
     totalDiscount: 0,
-    totalTax: 0,
     avgSaleValue: 0,
     totalItems: 0
   };

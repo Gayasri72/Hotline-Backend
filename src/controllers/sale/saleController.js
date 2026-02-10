@@ -28,7 +28,6 @@ export const createSale = catchAsync(async (req, res, next) => {
   // Process items and validate stock
   const processedItems = [];
   let subtotal = 0;
-  let taxTotal = 0;
 
   for (const item of items) {
     // Get product
@@ -54,12 +53,10 @@ export const createSale = catchAsync(async (req, res, next) => {
     // Calculate item totals
     const unitPrice = item.unitPrice || product.sellingPrice;
     const quantity = item.quantity;
-    const taxRate = product.taxRate || 0;
     const itemDiscount = item.discount || 0;
 
     const itemSubtotal = unitPrice * quantity;
-    const taxAmount = (itemSubtotal - itemDiscount) * (taxRate / 100);
-    const itemTotal = itemSubtotal - itemDiscount + taxAmount;
+    const itemTotal = itemSubtotal - itemDiscount;
 
     processedItems.push({
       product: product._id,
@@ -68,14 +65,11 @@ export const createSale = catchAsync(async (req, res, next) => {
       serialNumber: item.serialNumber || null,
       quantity,
       unitPrice,
-      taxRate,
-      taxAmount: Math.round(taxAmount * 100) / 100,
       discount: itemDiscount,
       total: Math.round(itemTotal * 100) / 100
     });
 
     subtotal += itemSubtotal;
-    taxTotal += taxAmount;
   }
 
   // Calculate discount
@@ -89,7 +83,7 @@ export const createSale = catchAsync(async (req, res, next) => {
   }
 
   // Calculate grand total
-  const grandTotal = Math.round((subtotal - discountTotal + taxTotal) * 100) / 100;
+  const grandTotal = Math.round((subtotal - discountTotal) * 100) / 100;
 
   // Process payments
   let amountPaid = 0;
@@ -128,7 +122,6 @@ export const createSale = catchAsync(async (req, res, next) => {
     discountType: discountType || null,
     discountValue: discountValue || 0,
     discountTotal: Math.round(discountTotal * 100) / 100,
-    taxTotal: Math.round(taxTotal * 100) / 100,
     grandTotal,
     amountPaid,
     changeGiven: Math.round(changeGiven * 100) / 100,
@@ -421,8 +414,7 @@ export const getSalesReport = catchAsync(async (req, res, next) => {
         },
         totalSales: { $sum: 1 },
         totalRevenue: { $sum: "$grandTotal" },
-        totalDiscount: { $sum: "$discountTotal" },
-        totalTax: { $sum: "$taxTotal" }
+        totalDiscount: { $sum: "$discountTotal" }
       }
     },
     { $sort: { _id: 1 } }
@@ -432,9 +424,8 @@ export const getSalesReport = catchAsync(async (req, res, next) => {
   const totals = result.reduce((acc, day) => ({
     totalSales: acc.totalSales + day.totalSales,
     totalRevenue: acc.totalRevenue + day.totalRevenue,
-    totalDiscount: acc.totalDiscount + day.totalDiscount,
-    totalTax: acc.totalTax + day.totalTax
-  }), { totalSales: 0, totalRevenue: 0, totalDiscount: 0, totalTax: 0 });
+    totalDiscount: acc.totalDiscount + day.totalDiscount
+  }), { totalSales: 0, totalRevenue: 0, totalDiscount: 0 });
 
   res.json({
     status: "success",

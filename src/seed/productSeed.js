@@ -332,7 +332,6 @@ for (const p of productsData) {
     costPrice: p.costPrice,
     sellingPrice: p.sellingPrice,
     unit: "piece",
-    taxRate: 12,
     warrantyDuration: p.warrantyDuration || 0,
     warrantyType: p.warrantyType || "NONE",
     warrantyDescription: p.warrantyDescription || "",

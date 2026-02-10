@@ -12,7 +12,7 @@ export const createProduct = catchAsync(async (req, res, next) => {
   const {
     name, description, sku, barcode, category, subcategory,
     costPrice, sellingPrice, wholesalePrice,
-    unit, taxRate, minStockLevel,
+    unit, minStockLevel,
     warrantyDuration, warrantyType, warrantyDescription,
     supplier, offer
   } = req.body;
@@ -73,7 +73,6 @@ export const createProduct = catchAsync(async (req, res, next) => {
     sellingPrice,
     wholesalePrice,
     unit,
-    taxRate,
     minStockLevel,
     warrantyDuration,
     warrantyType,
@@ -275,7 +274,7 @@ export const updateProduct = catchAsync(async (req, res, next) => {
   const {
     name, description, sku, barcode, category, subcategory,
     costPrice, sellingPrice, wholesalePrice,
-    unit, taxRate, minStockLevel, isActive,
+    unit, minStockLevel, isActive,
     warrantyDuration, warrantyType, warrantyDescription,
     supplier, offer
   } = req.body;
@@ -345,7 +344,6 @@ export const updateProduct = catchAsync(async (req, res, next) => {
   if (sellingPrice !== undefined) product.sellingPrice = sellingPrice;
   if (wholesalePrice !== undefined) product.wholesalePrice = wholesalePrice;
   if (unit) product.unit = unit;
-  if (taxRate !== undefined) product.taxRate = taxRate;
   if (minStockLevel !== undefined) product.minStockLevel = minStockLevel;
   if (warrantyDuration !== undefined) product.warrantyDuration = warrantyDuration;
   if (warrantyType !== undefined) product.warrantyType = warrantyType;

@@ -19,7 +19,7 @@ export const CSV_COLUMNS = {
   wholesalePrice: { required: false, type: "number" },
   stockQuantity: { required: false, type: "number", default: 0 },
   unit: { required: false, type: "string", default: "pcs" },
-  taxRate: { required: false, type: "number", default: 0 },
+
   minStockLevel: { required: false, type: "number", default: 5 },
   warrantyMonths: { required: false, type: "number" },
   warrantyType: { required: false, type: "string" },
