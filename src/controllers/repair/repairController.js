@@ -400,9 +400,35 @@ export const completeRepair = catchAsync(async (req, res, next) => {
  * PUT /api/v1/repairs/:id/payment
  */
 export const collectPayment = catchAsync(async (req, res, next) => {
-  const { amount } = req.body;
+  const { amount, paymentMethod, payments } = req.body;
 
-  if (!amount || amount <= 0) {
+  // Build payments array - support both new format (payments array) and old format (amount + paymentMethod)
+  let processedPayments = [];
+
+  if (payments && Array.isArray(payments) && payments.length > 0) {
+    // New format: payments array
+    for (const payment of payments) {
+      if (payment.amount > 0) {
+        processedPayments.push({
+          method: payment.method || "CASH",
+          amount: payment.amount,
+          reference: payment.reference || null,
+          paidAt: new Date()
+        });
+      }
+    }
+  } else if (amount && amount > 0) {
+    // Old format: single amount + paymentMethod
+    processedPayments.push({
+      method: paymentMethod || "CASH",
+      amount: amount,
+      paidAt: new Date()
+    });
+  }
+
+  const totalPaid = processedPayments.reduce((sum, p) => sum + p.amount, 0);
+
+  if (totalPaid <= 0) {
     return next(new AppError("Payment amount is required", 400));
   }
 
@@ -420,10 +446,15 @@ export const collectPayment = catchAsync(async (req, res, next) => {
   const totalCost = repair.totalCost;
   const advancePaid = repair.advancePayment;
   const balanceDue = Math.max(0, totalCost - advancePaid);
-  const amountReceived = amount;
-  const change = Math.max(0, amountReceived - balanceDue);
 
-  repair.finalPayment = amount;
+  if (totalPaid < balanceDue) {
+    return next(new AppError(`Insufficient payment. Balance due: Rs. ${balanceDue}, Paid: Rs. ${totalPaid}`, 400));
+  }
+
+  const change = Math.max(0, totalPaid - balanceDue);
+
+  repair.finalPayment = balanceDue;
+  repair.payments = processedPayments;
   repair.status = REPAIR_STATUS.COMPLETED;
   repair.pickupDate = new Date();
   await repair.save();
@@ -444,8 +475,9 @@ export const collectPayment = catchAsync(async (req, res, next) => {
         partsTotal: repair.partsTotal,
         advancePaid,
         balanceDue,
-        amountReceived,
+        amountReceived: totalPaid,
         change,
+        payments: processedPayments,
         paymentStatus: "PAID"
       }
     }

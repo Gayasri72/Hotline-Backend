@@ -62,6 +62,28 @@ const partUsedSchema = new mongoose.Schema({
   }
 }, { _id: true });
 
+// Payment subdocument schema (for final payment)
+const repairPaymentSchema = new mongoose.Schema({
+  method: {
+    type: String,
+    enum: ["CASH", "CARD", "OTHER"],
+    required: true
+  },
+  amount: {
+    type: Number,
+    required: true,
+    min: [0.01, "Payment amount must be positive"]
+  },
+  reference: {
+    type: String,
+    trim: true
+  },
+  paidAt: {
+    type: Date,
+    default: Date.now
+  }
+}, { _id: true });
+
 // Customer subdocument schema
 const customerSchema = new mongoose.Schema({
   name: {
@@ -231,6 +253,11 @@ const repairJobSchema = new mongoose.Schema({
     type: Number,
     default: 0,
     min: 0
+  },
+  // Payment method details for final payment
+  payments: {
+    type: [repairPaymentSchema],
+    default: []
   },
   paymentStatus: {
     type: String,
