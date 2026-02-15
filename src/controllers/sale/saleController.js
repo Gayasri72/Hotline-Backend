@@ -215,6 +215,7 @@ export const getSales = catchAsync(async (req, res, next) => {
     startDate,
     endDate,
     createdBy,
+    search,
     page = 1,
     limit = 20
   } = req.query;
@@ -238,6 +239,26 @@ export const getSales = catchAsync(async (req, res, next) => {
 
   if (createdBy) {
     query.createdBy = createdBy;
+  }
+
+  // Search by sale number, customer name, or customer phone
+  if (search) {
+    const isDigitsOnly = /^\d+$/.test(search);
+    if (isDigitsOnly) {
+      // For digit-only input, match the trailing part of sale number
+      const suffixRegex = new RegExp(search + "$", "i");
+      query.$or = [
+        { saleNumber: suffixRegex },
+        { "customer.phone": new RegExp(search, "i") }
+      ];
+    } else {
+      const searchRegex = new RegExp(search, "i");
+      query.$or = [
+        { saleNumber: searchRegex },
+        { "customer.name": searchRegex },
+        { "customer.phone": searchRegex }
+      ];
+    }
   }
 
   // Pagination
