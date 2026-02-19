@@ -63,7 +63,7 @@ app.use(helmet({
 
 // Rate limiting - prevent brute force attacks
 const limiter = rateLimit({
-  max: 500, // 500 requests per window (increased for testing)
+  max: 5000, // 500 requests per window (increased for testing)
   windowMs: 15 * 60 * 1000, // 15 minutes
   message: "Too many requests from this IP, please try again after 15 minutes",
   standardHeaders: true, // Return rate limit info in headers
